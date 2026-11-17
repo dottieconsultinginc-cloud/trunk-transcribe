@@ -96,6 +96,34 @@ class TestCheckTranscriptForAlertKeywords(unittest.TestCase):
         )
 
 
+class TestKeywordEdgeCases(unittest.TestCase):
+    def test_keyword_ending_in_punctuation_matches(self):
+        matched, lines = notification.check_transcript_for_alert_keywords(
+            "Engine 5 on scene, 5-1-5: smoke showing", ["5-1-5:"]
+        )
+        self.assertEqual(matched, ["5-1-5:"])
+        self.assertEqual(len(lines), 1)
+
+    def test_regex_characters_in_keyword_are_literal(self):
+        matched, _ = notification.check_transcript_for_alert_keywords(
+            "unit (10-4) copy", ["(10-4)"]
+        )
+        self.assertEqual(matched, ["(10-4)"])
+
+    def test_keyword_must_be_whole_word(self):
+        matched, _ = notification.check_transcript_for_alert_keywords(
+            "the firefighters are on scene", ["fire"]
+        )
+        self.assertEqual(matched, [])
+
+    def test_escalation_phrases_match_case_insensitively(self):
+        matched, _ = notification.check_transcript_for_alert_keywords(
+            "Command, we have a WORKING FIRE, requesting a second alarm",
+            ["working fire", "second alarm", "rehab"],
+        )
+        self.assertCountEqual(matched, ["working fire", "second alarm"])
+
+
 class TestGetMatchingConfig(unittest.TestCase):
     def test_get_matching_config(self):
         metadata = Metadata(talkgroup="TG123", short_name="ShortName123")
