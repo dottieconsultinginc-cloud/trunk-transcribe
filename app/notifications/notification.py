@@ -76,11 +76,16 @@ def check_transcript_for_alert_keywords(
 ) -> tuple[list[str], list[str]]:
     matched_keywords = []
     matched_lines = []
+    # Escape keywords so regex characters are matched literally, and use
+    # lookarounds instead of \b so keywords ending in punctuation (e.g. "5-1-5:")
+    # can still match as whole words.
+    patterns = {
+        keyword: re.compile(rf"(?<!\w){re.escape(keyword)}(?!\w)", re.IGNORECASE)
+        for keyword in keywords
+    }
     for line in transcript.splitlines():
         matches = [
-            keyword
-            for keyword in keywords
-            if re.compile(rf"\b{keyword}\b", re.IGNORECASE).search(line)
+            keyword for keyword, pattern in patterns.items() if pattern.search(line)
         ]
         if len(matches):
             matched_keywords += matches
